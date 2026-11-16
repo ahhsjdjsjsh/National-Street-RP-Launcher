@@ -97,6 +97,7 @@ public final class GameDataManager {
                 info.version = config.optString("data_version", FALLBACK_DATA_VERSION);
                 if (info.version.isEmpty()) info.version = FALLBACK_DATA_VERSION;
                 info.size = config.optLong("data_size", 0);
+                if (info.url.equals(FALLBACK_DATA_PAGE) && info.size <= 0) info.size = 666478908L;
                 info.sentinel = config.optString("data_sentinel", "SAMP/SAMP.ide");
 
                 String installed = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
@@ -108,8 +109,13 @@ public final class GameDataManager {
                 final DataInfo fi = info;
                 MAIN.post(() -> showDownloadOffer(activity, fi, callback));
             } catch (Exception e) {
-                android.util.Log.e("GameDataManager", "Config check failed", e);
-                MAIN.post(() -> showNetworkError(activity, e.getMessage(), callback));
+                android.util.Log.e("GameDataManager", "Remote config unavailable; using the bundled game-data release URL.", e);
+                DataInfo fallback = new DataInfo();
+                fallback.url = FALLBACK_DATA_PAGE;
+                fallback.version = FALLBACK_DATA_VERSION;
+                fallback.size = 666478908L;
+                fallback.sentinel = "SAMP/SAMP.ide";
+                MAIN.post(() -> showDownloadOffer(activity, fallback, callback));
             }
         });
     }
