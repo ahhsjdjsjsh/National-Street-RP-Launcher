@@ -157,7 +157,7 @@ public final class GameDataManager {
     }
 
     /** Resolve a MediaFire file-page URL to a direct download URL. */
-    private static String resolveDownloadUrl(String url) throws Exception {
+    public static String resolveDownloadUrl(String url) throws Exception {
         if (url.contains("mediafire.com/file/")) {
             String html = getText(url);
             Matcher m = Pattern.compile("https://download\\d*\\.mediafire\\.com/[^\\s\"'<>]+")
