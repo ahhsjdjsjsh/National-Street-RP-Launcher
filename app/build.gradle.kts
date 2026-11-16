@@ -1,3 +1,4 @@
+
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -18,7 +19,6 @@ val stageGlossHookJniLibs = tasks.register<Sync>("stageGlossHookJniLibs") {
 
 android {
     namespace = "com.sampmobile.xyvern"
-    //noinspection GradleDependency
     compileSdk = 34
 
     defaultConfig {
@@ -51,11 +51,12 @@ android {
             enableV1Signing = true
             enableV2Signing = true
         }
+
         create("release") {
             storeFile = file("${rootDir}/app-release-key.jks")
-            storePassword = "password123456"
+            storePassword = System.getenv("RELEASE_STORE_PASSWORD") ?: ""
             keyAlias = "sampkey"
-            keyPassword = "password123456"
+            keyPassword = System.getenv("RELEASE_KEY_PASSWORD") ?: ""
             enableV1Signing = true
             enableV2Signing = true
         }
@@ -67,7 +68,7 @@ android {
             isJniDebuggable = false
             isMinifyEnabled = false
 
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("debug")
 
             externalNativeBuild {
                 cmake {
@@ -140,6 +141,7 @@ android {
             useLegacyPackaging = true
             excludes += "META-INF/*"
         }
+
         resources {
             excludes += "META-INF/*"
         }
@@ -154,7 +156,14 @@ tasks.configureEach {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    implementation(
+        fileTree(
+            mapOf(
+                "dir" to "libs",
+                "include" to listOf("*.jar")
+            )
+        )
+    )
 
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -186,28 +195,38 @@ dependencies {
 
 // Optional Laragon deployment on local Windows development machine only
 val laragonDir = file("C:\\laragon\\www")
+
 if (System.getenv("GITHUB_ACTIONS") == null && laragonDir.exists()) {
     afterEvaluate {
         android.applicationVariants.all {
             val variant = this
-            val taskName = "copy${variant.name.replaceFirstChar { if (it.isLowerCase()) it.uppercase() else it.toString() }}ApksToLaragon"
-            
+
+            val taskName =
+                "copy${variant.name.replaceFirstChar {
+                    if (it.isLowerCase()) it.uppercase() else it.toString()
+                }}ApksToLaragon"
+
             tasks.register<Copy>(taskName) {
                 doNotTrackState("Destination directory contains unreadable content")
+
                 description = "Copies ${variant.name} APKs to Laragon www directory"
                 into(laragonDir)
-                
+
                 variant.outputs.all {
                     @Suppress("DEPRECATION")
-                    val output = this as com.android.build.gradle.api.BaseVariantOutput
+                    val output =
+                        this as com.android.build.gradle.api.BaseVariantOutput
+
                     from(output.outputFile)
                 }
-                
+
                 doLast {
-                    println("Copied APKs for variant '${variant.name}' to C:\\laragon\\www")
+                    println(
+                        "Copied APKs for variant '${variant.name}' to C:\\laragon\\www"
+                    )
                 }
             }
-            
+
             variant.assembleProvider.configure {
                 finalizedBy(taskName)
             }
