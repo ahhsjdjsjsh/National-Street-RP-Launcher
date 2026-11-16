@@ -332,8 +332,13 @@ public class GameDataDownloadService extends Service {
         boolean append = (code == HttpURLConnection.HTTP_PARTIAL);
         if (!append && existing > 0) existing = 0; // server ignored Range: restart from 0
 
-        long total = conn.getContentLengthLong();
-        if (append) total += existing;
+        long responseLength = conn.getContentLengthLong();
+        if (responseLength == 0L) {
+            conn.disconnect();
+            throw new java.io.IOException("The download server returned an empty file. Please check the game-data link.");
+        }
+        long total = responseLength;
+        if (append && total > 0) total += existing;
         if (total <= 0) total = Math.max(existing, expectedSize);
 
         setState(PHASE_DOWNLOAD, (int) (total > 0 ? Math.min(100, existing * 100 / total) : 0),
@@ -387,13 +392,14 @@ public class GameDataDownloadService extends Service {
     }
 
     /** Resolve legacy configuration URLs to a reliable direct package URL. */
-    private static String resolveDownloadUrl(String url) {
-        // MediaFire landing pages timed out in the launcher. Use the direct,
-        // verified GitHub release asset instead.
-        if (url == null || url.isEmpty() || url.contains("mediafire.com/file/")) {
-            return FALLBACK_DATA_URL;
+    private static String resolveDownloadUrl(String url) throws Exception {
+        if (url == null || url.trim().isEmpty()) {
+            throw new Exception("The game-data download URL is missing.");
         }
-        return url;
+        // Resolve the configured MediaFire page to its actual file URL.
+        // Do not replace it with a different release URL: that can return an
+        // empty response while still reporting HTTP 200.
+        return GameDataManager.resolveDownloadUrl(url.trim());
     }
 
     // ------------------------------------------------------------ extract --
