@@ -189,7 +189,7 @@ public final class GameDataManager {
     private static void showNetworkError(Activity a, String detail, ReadyCallback cb) {
         if (a.isFinishing()) return; dismissLoading(); setImmersive(a, false);
         new AlertDialog.Builder(a).setTitle("Unable to Load Game Data")
-                .setMessage("Tidak bisa membaca app.json. Periksa internet lalu coba lagi.\n\n" + (detail == null ? "" : detail))
+                .setMessage("Could not read app.json. Check your internet connection and try again.\n\n" + (detail == null ? "" : detail))
                 .setCancelable(false).setPositiveButton("TRY AGAIN", (d,w) -> checkAndPrepare(a,cb))
                 .setNegativeButton("EXIT", (d,w) -> a.finishAffinity()).show();
     }
@@ -200,7 +200,7 @@ public final class GameDataManager {
         ImageView icon=iconView(a,R.drawable.ic_package,56);
         TextView title=text(a,"Download Game Data",22,true); title.setGravity(Gravity.CENTER);
         String sizeTxt = info.size > 0 ? " • " + fmtBytes(info.size) : "";
-        TextView sub=text(a,"Complete game data package" + sizeTxt + "\nVersi " + info.version + " — cukup download sekali.",14,false);
+        TextView sub=text(a,"Complete game data package" + sizeTxt + "\nVersion " + info.version + " — download only once.",14,false);
         sub.setTextColor(Color.LTGRAY); sub.setGravity(Gravity.CENTER);
         Button dl=button(a,"DOWNLOAD NOW");
         root.addView(icon); addGap(a,root,6); root.addView(title); addGap(a,root,8);
@@ -276,8 +276,8 @@ public final class GameDataManager {
                 } else if (s.phase == GameDataDownloadService.PHASE_FAILED) {
                     unregisterProgressUi();
                     if (!a.isFinishing()) {
-                        new AlertDialog.Builder(a).setTitle("Download gagal")
-                                .setMessage(s.error == null ? "Silakan coba lagi." : s.error)
+                        new AlertDialog.Builder(a).setTitle("Download failed")
+                                .setMessage(s.error == null ? "Please try again." : s.error)
                                 .setCancelable(false)
                                 .setPositiveButton("TRY AGAIN", (x, w) ->
                                         GameDataDownloadService.autoResume(a))
