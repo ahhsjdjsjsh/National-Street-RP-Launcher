@@ -20,7 +20,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-           packages: ''
+          packages: ''
 
       - name: Install Android NDK and CMake
         run: |
