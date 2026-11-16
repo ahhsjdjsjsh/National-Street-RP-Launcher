@@ -248,7 +248,7 @@ public class PlayFragment extends Fragment {
                     }
                 }
                 saveCustomServers(customServers);
-                Toast.makeText(getContext(), "Server berhasil dihapus!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Server removed successfully!", Toast.LENGTH_SHORT).show();
                 detailDialog.dismiss();
                 updateList();
             });
@@ -264,7 +264,7 @@ public class PlayFragment extends Fragment {
         btnConnect.setOnClickListener(v -> {
             String newNick = etUsername.getText().toString().trim();
             if (newNick.isEmpty()) {
-                Toast.makeText(getContext(), "Silakan masukkan username!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please enter a username!", Toast.LENGTH_SHORT).show();
                 return;
             }
             sp.edit().putString("nickname", newNick).apply();
@@ -274,7 +274,7 @@ public class PlayFragment extends Fragment {
                     com.sampmobile.xyvern.launcher.util.GameDataVerifier.verifyGameData(requireContext());
             if (!verify.isValid) {
                 Toast.makeText(getContext(), 
-                        "Data game belum lengkap! Silakan download data dari tab Home atau tambahkan file GTA SA manual.", 
+                        "Game data is incomplete. Download it from the Home tab or add your GTA SA files manually.", 
                         Toast.LENGTH_LONG).show();
                 stopPingTask();
                 detailDialog.dismiss();
@@ -389,14 +389,14 @@ public class PlayFragment extends Fragment {
             if (input.contains(":")) {
                 String[] parts = input.split(":", -1);
                 if (parts.length != 2 || parts[0].trim().isEmpty()) {
-                    Toast.makeText(getContext(), "Format IP:Port tidak valid!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Invalid IP:Port format!", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 ip = parts[0];
                 try {
                     port = Integer.parseInt(parts[1]);
                 } catch (NumberFormatException e) {
-                    Toast.makeText(getContext(), "Port tidak valid!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Invalid port!", Toast.LENGTH_SHORT).show();
                     return;
                 }
             } else {
@@ -409,7 +409,7 @@ public class PlayFragment extends Fragment {
                 return;
             }
             if (serverAlreadyExists(ip, port)) {
-                Toast.makeText(getContext(), "Server tersebut sudah ada!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "That server already exists!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -435,14 +435,14 @@ public class PlayFragment extends Fragment {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (serverAlreadyExists(finalIp, finalPort)) {
-                            Toast.makeText(getContext(), "Server tersebut sudah ada!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "That server already exists!", Toast.LENGTH_SHORT).show();
                             addDialog.dismiss();
                             return;
                         }
                         ArrayList<SAMPServerInfo> customServers = loadCustomServers();
                         customServers.add(newServer);
                         saveCustomServers(customServers);
-                        Toast.makeText(getContext(), "Server berhasil ditambahkan!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Server added successfully!", Toast.LENGTH_SHORT).show();
                         addDialog.dismiss();
                         updateList();
                     });
