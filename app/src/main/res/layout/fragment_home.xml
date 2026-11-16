@@ -42,7 +42,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/montserrat_bold"
-                        android:text="SA-MP CLIENT"
+                        android:text="National Street RP"
                         android:textColor="#FFFFFF"
                         android:textSize="18sp"
                         android:letterSpacing="0.04" />
@@ -51,13 +51,24 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/montserrat_medium"
-                        android:text="High-Performance Edition"
+                        android:text="ROLEPLAY SERVER"
                         android:textColor="#38BDF8"
                         android:textSize="12sp" />
                 </LinearLayout>
-            </LinearLayout>
+             </LinearLayout>
 
-            <!-- Card 1: Game Data Verification & Play Action -->
+                    <!-- SERVER ADDRESS -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="SERVER: 142.132.203.47:16234"
+                        android:textColor="#42A5F5"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+<!-- Card 1: Game Data Verification & Play Action -->
             <LinearLayout
                 android:id="@+id/card_data_status"
                 android:layout_width="match_parent"
