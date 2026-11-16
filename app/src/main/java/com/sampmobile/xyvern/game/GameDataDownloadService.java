@@ -57,6 +57,7 @@ public class GameDataDownloadService extends Service {
     private static final int NOTIF_ID = 1001;
     private static final int MAX_RETRIES = 5;
     private static final long RETRY_BACKOFF_MS = 3000;
+    private static final String FALLBACK_DATA_URL = "https://github.com/rezzylrn/samp-mobile-optimized/releases/download/data-v1/files.zip";
 
     // ------------------------------------------------------------ state ----
     public static final int PHASE_IDLE = 0;
@@ -326,7 +327,7 @@ public class GameDataDownloadService extends Service {
         HttpURLConnection conn = connect(directUrl, existing);
         int code = conn.getResponseCode();
         if (code < 200 || code >= 300)
-            throw new Exception("Server menolak download (HTTP " + code + ").");
+            throw new Exception("The server rejected the download (HTTP " + code + ").");
 
         boolean append = (code == HttpURLConnection.HTTP_PARTIAL);
         if (!append && existing > 0) existing = 0; // server ignored Range: restart from 0
@@ -384,14 +385,12 @@ public class GameDataDownloadService extends Service {
         return c;
     }
 
-    /** Resolve a MediaFire file-page URL to a direct download URL. */
-    private static String resolveDownloadUrl(String url) throws Exception {
-        if (url != null && url.contains("mediafire.com/file/")) {
-            String html = GameDataManager.httpGet(url);
-            Matcher m = Pattern.compile("https://download\\d*\\.mediafire\\.com/[^\\s\"'<>]+")
-                    .matcher(html);
-            if (m.find()) return m.group(0);
-            throw new Exception("Could not find the direct download link from MediaFire.");
+    /** Resolve legacy configuration URLs to a reliable direct package URL. */
+    private static String resolveDownloadUrl(String url) {
+        // MediaFire landing pages timed out in the launcher. Use the direct,
+        // verified GitHub release asset instead.
+        if (url == null || url.isEmpty() || url.contains("mediafire.com/file/")) {
+            return FALLBACK_DATA_URL;
         }
         return url;
     }
