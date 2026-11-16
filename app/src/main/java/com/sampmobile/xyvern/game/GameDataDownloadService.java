@@ -187,8 +187,8 @@ public class GameDataDownloadService extends Service {
         mWorker = new Handler(t.getLooper());
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel ch = new NotificationChannel(CHANNEL_ID,
-                    "Download Data Game", NotificationManager.IMPORTANCE_LOW);
-            ch.setDescription("Progres unduhan data game");
+                    "Game Data Download", NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("Game data download progress");
             ch.setShowBadge(false);
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm != null) nm.createNotificationChannel(ch);
@@ -197,7 +197,7 @@ public class GameDataDownloadService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForegroundWithNotification(buildNotification("Menyiapkan unduhan...", 0));
+        startForegroundWithNotification(buildNotification("Preparing download...", 0));
         if (mRunning) return START_STICKY; // one job at a time
         final String action = intent != null ? intent.getAction() : ACTION_GAME_DATA;
         final String url = intent != null ? intent.getStringExtra(EXTRA_URL) : null;
@@ -224,7 +224,7 @@ public class GameDataDownloadService extends Service {
         try {
             Context c = this;
             File base = getExternalFilesDir(null);
-            if (base == null) throw new Exception("Penyimpanan tidak tersedia.");
+            if (base == null) throw new Exception("Storage is unavailable.");
             File cache = getExternalCacheDir();
             if (cache == null) cache = getCacheDir();
 
@@ -235,11 +235,11 @@ public class GameDataDownloadService extends Service {
             String resolvedKey = "resolved_" + versionTag;
             String direct = prefs(this).getString(resolvedKey, "");
             if (direct == null || direct.isEmpty()) {
-                setState(PHASE_CONNECT, 0, 0, expectedSize, "Mencari link download...", null);
+                setState(PHASE_CONNECT, 0, 0, expectedSize, "Finding download link...", null);
                 direct = resolveDownloadUrl(pageUrl);
                 prefs(this).edit().putString(resolvedKey, direct).apply();
             }
-            if (direct == null || direct.isEmpty()) throw new Exception("Link download tidak valid.");
+            if (direct == null || direct.isEmpty()) throw new Exception("Invalid download link.");
 
             File part = new File(cache, "game_data_" + versionTag + ".zip.part");
             File finalZip = new File(cache, "game_data_" + versionTag + ".zip");
@@ -249,34 +249,34 @@ public class GameDataDownloadService extends Service {
 
             // 5. Verify size BEFORE extract.
             if (expectedSize > 0 && part.length() != expectedSize)
-                throw new Exception("Ukuran file tidak sesuai (" + part.length()
-                        + " / " + expectedSize + "). Download corrupt.");
+                throw new Exception("File size mismatch (" + part.length()
+                        + " / " + expectedSize + "). The download is corrupted.");
 
-            setState(PHASE_EXTRACT, 100, part.length(), part.length(), "Menyiapkan ekstrak...", null);
-            updateNotification(buildNotification("Mengekstrak...", 100));
+            setState(PHASE_EXTRACT, 100, part.length(), part.length(), "Preparing extraction...", null);
+            updateNotification(buildNotification("Extracting...", 100));
             if (part.renameTo(finalZip)) {
                 if (isGameData) {
                     // Delegate extract + sentinel check + .data_ready marker.
                     GameDataManager.finalizeGameDataInstall(c, finalZip, versionTag, sentinel);
                     try { if (finalZip.exists()) finalZip.delete(); } catch (Exception ignored) {}
                     clearPending(c);
-                    setState(PHASE_DONE, 100, 100, 100, "Data game siap dimainkan", null);
+                    setState(PHASE_DONE, 100, 100, 100, "Game data is ready to play", null);
                 } else {
                     // HomeFragment assets job: unzip into game dir, no marker change.
                     File zip = new File(base, "files.zip");
                     if (zip.exists()) zip.delete();
-                    if (!finalZip.renameTo(zip)) throw new Exception("Gagal menyiapkan file hasil unduhan.");
+                    if (!finalZip.renameTo(zip)) throw new Exception("Could not prepare the downloaded file.");
                     unzipTo(c, zip, base);
                     if (zip.exists()) zip.delete();
                     clearPending(c);
-                    setState(PHASE_DONE, 100, 100, 100, "Game assets terpasang", null);
+                    setState(PHASE_DONE, 100, 100, 100, "Game assets installed", null);
                 }
             } else {
-                throw new Exception("Gagal menyiapkan file hasil unduhan.");
+                throw new Exception("Could not prepare the downloaded file.");
             }
         } catch (Exception e) {
             String msg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-            setState(PHASE_FAILED, sState.percent, sState.bytes, sState.total, "Gagal", msg);
+            setState(PHASE_FAILED, sState.percent, sState.bytes, sState.total, "Failed", msg);
         } finally {
             mRunning = false;
             stopForeground(STOP_FOREGROUND_REMOVE);
@@ -293,11 +293,11 @@ public class GameDataDownloadService extends Service {
                 downloadOnce(directUrl, part, expectedSize);
                 return;
             } catch (Exception e) {
-                if (mCancelled) throw new Exception("Download dibatalkan.");
+                if (mCancelled) throw new Exception("Download cancelled.");
                 if (isTransient(e) && ++attempt <= MAX_RETRIES) {
                     long backoffMs = RETRY_BACKOFF_MS * (1L << Math.min(attempt - 1, 4));
                     setState(sState.phase, sState.percent, sState.bytes, sState.total,
-                            "Terputus — retry " + attempt + "/" + MAX_RETRIES, null);
+                            "Connection lost — retry " + attempt + "/" + MAX_RETRIES, null);
                     try { Thread.sleep(backoffMs); } catch (InterruptedException ignored) {
                         Thread.currentThread().interrupt();
                     }
@@ -336,7 +336,7 @@ public class GameDataDownloadService extends Service {
         if (total <= 0) total = Math.max(existing, expectedSize);
 
         setState(PHASE_DOWNLOAD, (int) (total > 0 ? Math.min(100, existing * 100 / total) : 0),
-                existing, total, "Mengunduh...", null);
+                existing, total, "Downloading...", null);
 
         long downloaded = existing;
         long lastUi = 0;
@@ -347,7 +347,7 @@ public class GameDataDownloadService extends Service {
             byte[] buf = new byte[128 * 1024];
             int n;
             while ((n = in.read(buf)) != -1) {
-                if (mCancelled) throw new Exception("Download dibatalkan.");
+                if (mCancelled) throw new Exception("Download cancelled.");
                 out.write(buf, 0, n);
                 downloaded += n;
                 long now = System.currentTimeMillis();
@@ -358,15 +358,15 @@ public class GameDataDownloadService extends Service {
                     int pct = total > 0 ? (int) Math.min(100, (downloaded * 100) / total) : 0;
                     setState(PHASE_DOWNLOAD, pct, downloaded, total,
                             fmtBytes(downloaded) + (total > 0 ? " / " + fmtBytes(total) : "")
-                                    + "  •  " + fmtBytes(speed) + "/dtk", null);
+                                    + "  •  " + fmtBytes(speed) + "/s", null);
                     updateNotification(buildNotification(
-                            "Mengunduh " + pct + "% (" + fmtBytes(downloaded)
+                            "Downloading " + pct + "% (" + fmtBytes(downloaded)
                                     + (total > 0 ? " / " + fmtBytes(total) : "") + ")", pct));
                 }
             }
             out.flush();
             ((FileOutputStream) out).getFD().sync();
-            setState(PHASE_DOWNLOAD, 100, downloaded, downloaded, "Download selesai", null);
+            setState(PHASE_DOWNLOAD, 100, downloaded, downloaded, "Download complete", null);
         } finally {
             try { in.close(); } catch (Exception ignored) {}
             try { out.close(); } catch (Exception ignored) {}
@@ -391,7 +391,7 @@ public class GameDataDownloadService extends Service {
             Matcher m = Pattern.compile("https://download\\d*\\.mediafire\\.com/[^\\s\"'<>]+")
                     .matcher(html);
             if (m.find()) return m.group(0);
-            throw new Exception("Tidak bisa menemukan link download langsung dari MediaFire.");
+            throw new Exception("Could not find the direct download link from MediaFire.");
         }
         return url;
     }
@@ -435,7 +435,7 @@ public class GameDataDownloadService extends Service {
             if (totalEntries > 0 && processed % 25 == 0) {
                 int pct = (processed * 100) / totalEntries;
                 setState(PHASE_EXTRACT, pct, processed, totalEntries,
-                        "Mengekstrak " + processed + "/" + totalEntries, null);
+                        "Extracting " + processed + "/" + totalEntries, null);
             }
         }
         zf.close();
@@ -462,7 +462,7 @@ public class GameDataDownloadService extends Service {
                 : new Notification.Builder(this);
         return b
                 .setSmallIcon(android.R.drawable.stat_sys_download)
-                .setContentTitle("M-SAMP: Unduh Data Game")
+                .setContentTitle("National Street RP: Game Data Download")
                 .setContentText(text)
                 .setProgress(100, percent, percent <= 0)
                 .setOngoing(true)
