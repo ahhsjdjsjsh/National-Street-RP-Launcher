@@ -264,8 +264,8 @@ public class SAMP extends GTASA implements CustomKeyboard.InputListener, HeightP
                     if (!storagePath.endsWith("/")) storagePath += "/";
                     initializeSAMP(storagePath);
                 } catch (Exception e) {
-                    Log.e(TAG, "Gagal inisialisasi game", e);
-                    Toast.makeText(this, "Gagal memulai game: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Game initialization failed", e);
+                    Toast.makeText(this, "Failed to start the game: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         }).start();
@@ -309,7 +309,7 @@ public class SAMP extends GTASA implements CustomKeyboard.InputListener, HeightP
             
             Log.d(TAG, "settings.ini saved for " + nickname + " to " + ip + ":" + port);
         } catch (Exception e) {
-            Log.e(TAG, "Gagal menulis settings.ini: " + e.getMessage());
+            Log.e(TAG, "Failed to write settings.ini: " + e.getMessage());
         }
     }
 
@@ -362,7 +362,7 @@ public class SAMP extends GTASA implements CustomKeyboard.InputListener, HeightP
         Log.i(TAG, "**** onDestroy");
         super.onDestroy();
         instance = null;
-        // Mematikan paksa proses game saat keluar untuk menghindari crash "destroyed mutex" 
+        // Force-stop the game process on exit to avoid a destroyed-mutex crash "destroyed mutex" 
         // yang sering terjadi di thread native saat activity dihancurkan.
         android.os.Process.killProcess(android.os.Process.myPid());
     }
