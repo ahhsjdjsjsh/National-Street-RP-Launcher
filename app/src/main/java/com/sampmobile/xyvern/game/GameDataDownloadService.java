@@ -343,7 +343,8 @@ public class GameDataDownloadService extends Service {
         long lastUi = 0;
         long startNs = System.nanoTime();
         InputStream in = new BufferedInputStream(conn.getInputStream(), 128 * 1024);
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(part, append));
+        FileOutputStream fileOut = new FileOutputStream(part, append);
+        OutputStream out = new BufferedOutputStream(fileOut);
         try {
             byte[] buf = new byte[128 * 1024];
             int n;
@@ -366,7 +367,7 @@ public class GameDataDownloadService extends Service {
                 }
             }
             out.flush();
-            ((FileOutputStream) out).getFD().sync();
+            fileOut.getFD().sync();
             setState(PHASE_DOWNLOAD, 100, downloaded, downloaded, "Download complete", null);
         } finally {
             try { in.close(); } catch (Exception ignored) {}
