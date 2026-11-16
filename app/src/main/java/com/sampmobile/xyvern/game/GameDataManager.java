@@ -45,7 +45,7 @@ import java.util.zip.ZipFile;
  * Remote maintenance gate + single-package game-data installer.
  *
  * The launcher downloads ONE complete data package (files.zip hosted on
- * MediaFire) instead of the old Lite/Full per-file manifests. Completion is
+ * instead of the old Lite/Full per-file manifests. Completion is
  * version-pinned: once the configured data_version is installed and verified,
  * the launcher never asks to download again.
  */
@@ -58,7 +58,7 @@ public final class GameDataManager {
     private static final String KEY_DATA_VERSION = "data_version";
     private static final String MARKER = "SAMP/.data_ready";
 
-    private static final int ACCENT = Color.rgb(240, 180, 41); // emas/amber modern (#F0B429)
+    private static final int ACCENT = Color.rgb(240, 180, 41); // modern amber (#F0B429)
     private static final int CARD = Color.rgb(29, 35, 52);
     private static final int WHITE = Color.rgb(245, 247, 255);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -67,7 +67,7 @@ public final class GameDataManager {
     public interface ReadyCallback { void onReady(); }
 
     private static final class DataInfo {
-        String url;        // may be a MediaFire file page or a direct link
+        String url;        // may be a direct download link
         String version;
         long size;         // expected bytes, 0 = unknown
         String sentinel;   // relative path that must exist after extract, "" = skip
@@ -76,7 +76,7 @@ public final class GameDataManager {
     private GameDataManager() {}
 
     public static void checkAndPrepare(Activity activity, ReadyCallback callback) {
-        showLoading(activity, "Memeriksa Launcher", "Menghubungkan ke server konfigurasi...");
+        showLoading(activity, "Checking Launcher", "Connecting to the configuration server...");
         IO.execute(() -> {
             try {
                 JSONObject config = getJson(APP_CONFIG);
@@ -157,7 +157,7 @@ public final class GameDataManager {
             Matcher m = Pattern.compile("https://download\\d*\\.mediafire\\.com/[^\\s\"'<>]+")
                     .matcher(html);
             if (m.find()) return m.group(0);
-            throw new Exception("Tidak bisa menemukan link download langsung dari MediaFire.");
+            throw new Exception("Could not find the direct download link from MediaFire.");
         }
         return url;
     }
@@ -179,19 +179,19 @@ public final class GameDataManager {
         if (a.isFinishing()) return; dismissLoading(); setImmersive(a, false);
         LinearLayout root = panel(a); root.setPadding(dp(a,24),dp(a,24),dp(a,24),dp(a,22));
         ImageView icon=iconView(a,R.drawable.ic_gear,56);
-        TextView title=text(a,"M-SAMP Maintenance",22,true); title.setGravity(Gravity.CENTER);
-        TextView msg=text(a,"Client SAMP sedang maintenance untuk update.",14,false); msg.setTextColor(Color.LTGRAY); msg.setGravity(Gravity.CENTER);
-        Button exit=button(a,"KELUAR"); exit.setOnClickListener(v -> { a.finishAffinity(); android.os.Process.killProcess(android.os.Process.myPid()); });
+        TextView title=text(a,"National Street RP Maintenance",22,true); title.setGravity(Gravity.CENTER);
+        TextView msg=text(a,"The SAMP client is temporarily unavailable for maintenance.",14,false); msg.setTextColor(Color.LTGRAY); msg.setGravity(Gravity.CENTER);
+        Button exit=button(a,"EXIT"); exit.setOnClickListener(v -> { a.finishAffinity(); android.os.Process.killProcess(android.os.Process.myPid()); });
         root.addView(icon); addGap(a,root,8); root.addView(title); addGap(a,root,10); root.addView(msg); addGap(a,root,22); root.addView(exit);
         AlertDialog d=new AlertDialog.Builder(a).setView(root).setCancelable(false).create(); d.show(); styleWindow(a,d);
     }
 
     private static void showNetworkError(Activity a, String detail, ReadyCallback cb) {
         if (a.isFinishing()) return; dismissLoading(); setImmersive(a, false);
-        new AlertDialog.Builder(a).setTitle("Gagal memuat data game")
+        new AlertDialog.Builder(a).setTitle("Unable to Load Game Data")
                 .setMessage("Tidak bisa membaca app.json. Periksa internet lalu coba lagi.\n\n" + (detail == null ? "" : detail))
-                .setCancelable(false).setPositiveButton("COBA LAGI", (d,w) -> checkAndPrepare(a,cb))
-                .setNegativeButton("KELUAR", (d,w) -> a.finishAffinity()).show();
+                .setCancelable(false).setPositiveButton("TRY AGAIN", (d,w) -> checkAndPrepare(a,cb))
+                .setNegativeButton("EXIT", (d,w) -> a.finishAffinity()).show();
     }
 
     private static void showDownloadOffer(Activity a, DataInfo info, ReadyCallback cb) {
@@ -200,9 +200,9 @@ public final class GameDataManager {
         ImageView icon=iconView(a,R.drawable.ic_package,56);
         TextView title=text(a,"Download Game Data",22,true); title.setGravity(Gravity.CENTER);
         String sizeTxt = info.size > 0 ? " • " + fmtBytes(info.size) : "";
-        TextView sub=text(a,"Paket data lengkap" + sizeTxt + "\nVersi " + info.version + " — cukup download sekali.",14,false);
+        TextView sub=text(a,"Complete game data package" + sizeTxt + "\nVersi " + info.version + " — cukup download sekali.",14,false);
         sub.setTextColor(Color.LTGRAY); sub.setGravity(Gravity.CENTER);
-        Button dl=button(a,"DOWNLOAD SEKARANG");
+        Button dl=button(a,"DOWNLOAD NOW");
         root.addView(icon); addGap(a,root,6); root.addView(title); addGap(a,root,8);
         root.addView(sub); addGap(a,root,18); root.addView(dl);
         AlertDialog d=new AlertDialog.Builder(a).setView(root).setCancelable(false).create(); d.show(); styleWindow(a,d);
@@ -220,8 +220,8 @@ public final class GameDataManager {
         setImmersive(a, true);
         LinearLayout root=panel(a); root.setPadding(dp(a,22),dp(a,22),dp(a,24),dp(a,20));
         ImageView pic=iconView(a,R.drawable.ic_download,48);
-        TextView title=text(a,"Menyiapkan Game Data",21,true); title.setGravity(Gravity.CENTER);
-        TextView phase=text(a,"Menghubungkan...",14,false); phase.setTextColor(Color.LTGRAY);
+        TextView title=text(a,"Preparing Game Data",21,true); title.setGravity(Gravity.CENTER);
+        TextView phase=text(a,"Connecting...",14,false); phase.setTextColor(Color.LTGRAY);
         ProgressBar bar=new ProgressBar(a,null,android.R.attr.progressBarStyleHorizontal);
         bar.setMax(1000); bar.setProgress(0);
         bar.setProgressTintList(ColorStateList.valueOf(ACCENT));
@@ -270,7 +270,7 @@ public final class GameDataManager {
                     unregisterProgressUi();
                     dismissLoading();
                     setImmersive(a, false);
-                    Toast.makeText(a, "Game data siap dimainkan", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(a, "Game data is ready to play", Toast.LENGTH_SHORT).show();
                     ReadyCallback cb = readyCallback;
                     if (cb != null && !a.isFinishing()) cb.onReady();
                 } else if (s.phase == GameDataDownloadService.PHASE_FAILED) {
@@ -279,9 +279,9 @@ public final class GameDataManager {
                         new AlertDialog.Builder(a).setTitle("Download gagal")
                                 .setMessage(s.error == null ? "Silakan coba lagi." : s.error)
                                 .setCancelable(false)
-                                .setPositiveButton("COBA LAGI", (x, w) ->
+                                .setPositiveButton("TRY AGAIN", (x, w) ->
                                         GameDataDownloadService.autoResume(a))
-                                .setNegativeButton("KELUAR", (x, w) -> a.finishAffinity())
+                                .setNegativeButton("EXIT", (x, w) -> a.finishAffinity())
                                 .show();
                     }
                 }
@@ -298,11 +298,11 @@ public final class GameDataManager {
 
     private static String phaseLabel(int p) {
         switch (p) {
-            case GameDataDownloadService.PHASE_CONNECT:  return "Menyiapkan download...";
-            case GameDataDownloadService.PHASE_DOWNLOAD: return "Mengunduh game data...";
-            case GameDataDownloadService.PHASE_EXTRACT:  return "Mengekstrak data...";
-            case GameDataDownloadService.PHASE_DONE:     return "Selesai";
-            default: return "Menunggu...";
+            case GameDataDownloadService.PHASE_CONNECT:  return "Preparing download...";
+            case GameDataDownloadService.PHASE_DOWNLOAD: return "Downloading game data...";
+            case GameDataDownloadService.PHASE_EXTRACT:  return "Extracting game data...";
+            case GameDataDownloadService.PHASE_DONE:     return "Complete";
+            default: return "Waiting...";
         }
     }
 
@@ -313,14 +313,14 @@ public final class GameDataManager {
     public static void finalizeGameDataInstall(Context c, File zipFile, String version, String sentinel) throws Exception {
         try (ZipFile zip = new ZipFile(zipFile)) {
             int totalEntries = zip.size();
-            if (totalEntries <= 0) throw new Exception("File zip kosong / rusak.");
+            if (totalEntries <= 0) throw new Exception("ZIP file is empty or corrupted.");
             java.util.ArrayList<String> names = new java.util.ArrayList<>(totalEntries);
             java.util.Enumeration<? extends ZipEntry> scan = zip.entries();
             while (scan.hasMoreElements()) names.add(scan.nextElement().getName());
             final String stripPrefix = detectStripPrefix(names);
 
             File root = c.getExternalFilesDir(null);
-            if (root == null) throw new Exception("Penyimpanan tidak tersedia.");
+            if (root == null) throw new Exception("Storage is unavailable.");
             final String rootCanon = root.getCanonicalPath() + File.separator;
 
             java.util.Enumeration<? extends ZipEntry> en = zip.entries();
@@ -336,7 +336,7 @@ public final class GameDataManager {
                 File target = new File(root, name);
                 String canon = target.getCanonicalPath();
                 if (!canon.startsWith(rootCanon) && !canon.equals(root.getCanonicalPath()))
-                    throw new Exception("Entri zip tidak valid: " + name);
+                    throw new Exception("Invalid ZIP entry: " + name);
                 if (e.isDirectory()) {
                     target.mkdirs();
                 } else {
@@ -368,15 +368,15 @@ public final class GameDataManager {
     private static void downloadWithProgress(String url, File out, long expectedSize, ProgressUi ui) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(20000); c.setReadTimeout(60000);
-        c.setRequestProperty("User-Agent", "M-SAMP-Launcher");
+        c.setRequestProperty("User-Agent", "National-Street-RP-Launcher");
         c.setInstanceFollowRedirects(true);
         int code = c.getResponseCode();
-        if (code / 100 != 2) throw new Exception("Server menolak download (HTTP " + code + ").");
+        if (code / 100 != 2) throw new Exception("The server rejected the download (HTTP " + code + ").");
         long total = c.getContentLengthLong();
         if (total <= 0) total = expectedSize;
 
         final long totalF = total;
-        postPhase(ui, "Mengunduh game data...", totalF > 0 ? "0 / " + fmtBytes(totalF) : "");
+        postPhase(ui, "Downloading game data...", totalF > 0 ? "0 / " + fmtBytes(totalF) : "");
         long lastUi = 0, lastBytes = 0, startNs = System.nanoTime();
         byte[] buf = new byte[128 * 1024];
         try (InputStream in = new BufferedInputStream(c.getInputStream());
@@ -396,7 +396,7 @@ public final class GameDataManager {
                         if (!ui.dialog.isShowing()) return;
                         ui.bar.setProgress(permille);
                         ui.detail.setText(fmtBytes(d) + (totalF > 0 ? " / " + fmtBytes(totalF) : "") + "  •  " + (permille / 10) + "%");
-                        ui.speed.setText(fmtBytes(speed) + "/dtk");
+                        ui.speed.setText(fmtBytes(speed) + "/s");
                     });
                     lastBytes = done;
                 }
@@ -404,16 +404,16 @@ public final class GameDataManager {
         } finally {
             c.disconnect();
         }
-        MAIN.post(() -> { if (ui.dialog.isShowing()) { ui.bar.setProgress(1000); ui.detail.setText("Download selesai"); ui.speed.setText(""); } });
+        MAIN.post(() -> { if (ui.dialog.isShowing()) { ui.bar.setProgress(1000); ui.detail.setText("Download complete"); ui.speed.setText(""); } });
     }
 
     private static void extractWithProgress(Activity a, File zipFile, ProgressUi ui) throws Exception {
         File root = a.getExternalFilesDir(null);
-        if (root == null) throw new Exception("Penyimpanan tidak tersedia.");
+        if (root == null) throw new Exception("Storage is unavailable.");
         final String rootCanon = root.getCanonicalPath() + File.separator;
         try (ZipFile zip = new ZipFile(zipFile)) {
             int totalEntries = zip.size();
-            if (totalEntries <= 0) throw new Exception("File zip kosong / rusak.");
+            if (totalEntries <= 0) throw new Exception("ZIP file is empty or corrupted.");
             // Detect a single wrapping top-level folder (e.g. "files/...") and strip it
             // so the layout matches the old per-file manifests (game root).
             java.util.ArrayList<String> names = new java.util.ArrayList<>(totalEntries);
@@ -423,7 +423,7 @@ public final class GameDataManager {
             if (!stripPrefix.isEmpty())
                 android.util.Log.i("GameDataManager", "stripping zip prefix: " + stripPrefix);
 
-            postPhase(ui, "Mengekstrak data...", "0 / " + totalEntries + " file");
+            postPhase(ui, "Extracting game data...", "0 / " + totalEntries + " file");
             Enumeration<? extends ZipEntry> en = zip.entries();
             int done = 0; long lastUi = 0;
             byte[] buf = new byte[128 * 1024];
@@ -439,7 +439,7 @@ public final class GameDataManager {
                 // zip-slip protection
                 String canon = target.getCanonicalPath();
                 if (!canon.startsWith(rootCanon) && !canon.equals(root.getCanonicalPath()))
-                    throw new Exception("Entri zip tidak valid: " + name);
+                    throw new Exception("Invalid ZIP entry: " + name);
                 if (e.isDirectory()) {
                     target.mkdirs();
                 } else {
@@ -467,7 +467,7 @@ public final class GameDataManager {
                 }
             }
         }
-        MAIN.post(() -> { if (ui.dialog.isShowing()) { ui.bar.setProgress(1000); ui.detail.setText("Ekstrak selesai"); ui.speed.setText(""); } });
+        MAIN.post(() -> { if (ui.dialog.isShowing()) { ui.bar.setProgress(1000); ui.detail.setText("Extraction complete"); ui.speed.setText(""); } });
     }
 
     /** Returns e.g. "files/" when every entry lives under one top-level folder, else "". */
@@ -508,7 +508,7 @@ public final class GameDataManager {
     private static String getText(String address) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(address).openConnection();
         c.setConnectTimeout(15000); c.setReadTimeout(30000);
-        c.setRequestProperty("User-Agent", "M-SAMP-Launcher");
+        c.setRequestProperty("User-Agent", "National-Street-RP-Launcher");
         c.setInstanceFollowRedirects(true);
         try (InputStream in = new BufferedInputStream(c.getInputStream());
              BufferedReader r = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
