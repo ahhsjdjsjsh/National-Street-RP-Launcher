@@ -51,7 +51,7 @@ import java.util.zip.ZipFile;
  */
 public final class GameDataManager {
     private static final String APP_CONFIG = "https://raw.githubusercontent.com/Kallzzxa/hehehaha/refs/heads/main/app.json";
-    private static final String FALLBACK_DATA_PAGE = "https://www.mediafire.com/file/rhkel93l3frrgtn/files.zip/file";
+    private static final String FALLBACK_DATA_PAGE = "https://github.com/rezzylrn/samp-mobile-optimized/releases/download/data-v1/files.zip";
     private static final String FALLBACK_DATA_VERSION = "1";
 
     private static final String PREFS = "samp_game_data";
@@ -89,7 +89,11 @@ public final class GameDataManager {
                 }
                 DataInfo info = new DataInfo();
                 info.url = config.optString("data_url", FALLBACK_DATA_PAGE);
-                if (info.url.isEmpty()) info.url = FALLBACK_DATA_PAGE;
+                // Avoid the MediaFire landing page that is timing out on some networks.
+                // Use the direct ZIP release URL already configured by HomeFragment.
+                if (info.url.isEmpty() || info.url.contains("mediafire.com/file/")) {
+                    info.url = FALLBACK_DATA_PAGE;
+                }
                 info.version = config.optString("data_version", FALLBACK_DATA_VERSION);
                 if (info.version.isEmpty()) info.version = FALLBACK_DATA_VERSION;
                 info.size = config.optLong("data_size", 0);
