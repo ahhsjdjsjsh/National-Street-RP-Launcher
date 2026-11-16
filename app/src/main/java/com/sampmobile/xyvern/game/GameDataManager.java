@@ -89,15 +89,15 @@ public final class GameDataManager {
                 }
                 DataInfo info = new DataInfo();
                 info.url = config.optString("data_url", FALLBACK_DATA_PAGE);
-                // Avoid the MediaFire landing page that is timing out on some networks.
-                // Use the direct ZIP release URL already configured by HomeFragment.
-                if (info.url.isEmpty() || info.url.contains("mediafire.com/file/")) {
-                    info.url = FALLBACK_DATA_PAGE;
+                // Keep the configured URL. MediaFire page URLs are resolved
+                // to their one-time direct download URL by GameDataDownloadService.
+                if (info.url == null || info.url.trim().isEmpty()) {
+                    throw new Exception("The game-data URL is missing from app.json.");
                 }
                 info.version = config.optString("data_version", FALLBACK_DATA_VERSION);
                 if (info.version.isEmpty()) info.version = FALLBACK_DATA_VERSION;
                 info.size = config.optLong("data_size", 0);
-                if (info.url.equals(FALLBACK_DATA_PAGE) && info.size <= 0) info.size = 666478908L;
+                if (info.size < 0) info.size = 0;
                 info.sentinel = config.optString("data_sentinel", "SAMP/SAMP.ide");
 
                 String installed = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
