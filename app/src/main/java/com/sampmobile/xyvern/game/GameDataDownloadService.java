@@ -277,6 +277,12 @@ public class GameDataDownloadService extends Service {
             }
         } catch (Exception e) {
             String msg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            // A stale MediaFire direct URL can return an empty response or an HTML
+            // error page with HTTP 200. Drop cached one-time URLs so TRY AGAIN
+            // resolves a fresh direct link from the configured page.
+            if (msg.contains("EMPTY_DOWNLOAD_RESPONSE") || msg.contains("HTML_DOWNLOAD_RESPONSE")) {
+                clearResolvedDownloadUrls();
+            }
             setState(PHASE_FAILED, sState.percent, sState.bytes, sState.total, "Failed", msg);
         } finally {
             mRunning = false;
@@ -333,9 +339,14 @@ public class GameDataDownloadService extends Service {
         if (!append && existing > 0) existing = 0; // server ignored Range: restart from 0
 
         long responseLength = conn.getContentLengthLong();
+        String contentType = conn.getContentType();
         if (responseLength == 0L) {
             conn.disconnect();
-            throw new java.io.IOException("The download server returned an empty file. Please check the game-data link.");
+            throw new java.io.IOException("EMPTY_DOWNLOAD_RESPONSE: The download server returned an empty file. Tap TRY AGAIN to refresh the download link.");
+        }
+        if (contentType != null && contentType.toLowerCase(Locale.US).contains("text/html")) {
+            conn.disconnect();
+            throw new java.io.IOException("HTML_DOWNLOAD_RESPONSE: The download server returned a web page instead of the game-data ZIP. Tap TRY AGAIN to refresh the download link.");
         }
         long total = responseLength;
         if (append && total > 0) total += existing;
@@ -373,12 +384,29 @@ public class GameDataDownloadService extends Service {
             }
             out.flush();
             fileOut.getFD().sync();
+            // Never report 100% for an empty body. This can happen when a
+            // one-time MediaFire URL has expired but still responds HTTP 200.
+            if (!part.exists() || part.length() == 0L) {
+                throw new java.io.IOException("EMPTY_DOWNLOAD_RESPONSE: The server finished without sending any file data. Tap TRY AGAIN to get a fresh download link.");
+            }
             setState(PHASE_DOWNLOAD, 100, downloaded, downloaded, "Download complete", null);
         } finally {
             try { in.close(); } catch (Exception ignored) {}
             try { out.close(); } catch (Exception ignored) {}
             conn.disconnect();
         }
+    }
+
+    /** Remove cached one-time URLs so the next retry resolves the configured page again. */
+    private void clearResolvedDownloadUrls() {
+        try {
+            SharedPreferences p = prefs(this);
+            SharedPreferences.Editor edit = p.edit();
+            for (String key : p.getAll().keySet()) {
+                if (key.startsWith("resolved_")) edit.remove(key);
+            }
+            edit.apply();
+        } catch (Exception ignored) {}
     }
 
     private HttpURLConnection connect(String url, long rangeStart) throws Exception {
