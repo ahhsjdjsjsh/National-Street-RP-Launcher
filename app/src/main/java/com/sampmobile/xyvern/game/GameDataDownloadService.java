@@ -57,7 +57,7 @@ public class GameDataDownloadService extends Service {
     private static final int NOTIF_ID = 1001;
     private static final int MAX_RETRIES = 5;
     private static final long RETRY_BACKOFF_MS = 3000;
-    private static final String FALLBACK_DATA_URL = "https://github.com/rezzylrn/samp-mobile-optimized/releases/download/data-v1/files.zip";
+    private static final String FALLBACK_DATA_URL = "https://api.github.com/repos/rezzylrn/samp-mobile-optimized/releases/assets/632704137";
 
     // ------------------------------------------------------------ state ----
     public static final int PHASE_IDLE = 0;
@@ -443,6 +443,7 @@ public class GameDataDownloadService extends Service {
         c.setConnectTimeout(20000);
         c.setReadTimeout(60000);
         c.setRequestProperty("User-Agent", "M-SAMP-Launcher");
+        c.setRequestProperty("Accept", "application/octet-stream");
         c.setInstanceFollowRedirects(true);
         if (rangeStart > 0) c.setRequestProperty("Range", "bytes=" + rangeStart + "-");
         return c;
