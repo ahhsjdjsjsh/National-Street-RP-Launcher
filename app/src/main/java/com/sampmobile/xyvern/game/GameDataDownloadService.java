@@ -246,7 +246,28 @@ public class GameDataDownloadService extends Service {
             File finalZip = new File(cache, "game_data_" + versionTag + ".zip");
 
             // 2. + 3. Download with full resume + retry-with-backoff.
-            downloadLoop(direct, part, expectedSize);
+            try {
+                downloadLoop(direct, part, expectedSize);
+            } catch (Exception primaryError) {
+                String reason = String.valueOf(primaryError.getMessage());
+                boolean emptyOrHtml = reason.contains("EMPTY_DOWNLOAD_RESPONSE")
+                        || reason.contains("HTML_DOWNLOAD_RESPONSE");
+                // The configured MediaFire page may resolve to a dead CDN link.
+                // For game data only, try the known release mirror once. Keep the
+                // same strict byte-size and ZIP/sentinel validation afterwards.
+                if (!isGameData || !emptyOrHtml
+                        || FALLBACK_DATA_URL.equals(direct)) {
+                    throw primaryError;
+                }
+                clearResolvedDownloadUrls();
+                if (part.exists() && !part.delete()) {
+                    throw new Exception("Could not clear the empty download file before trying the backup link.");
+                }
+                setState(PHASE_CONNECT, 0, 0, expectedSize,
+                        "Main download link failed — trying backup server...", null);
+                direct = FALLBACK_DATA_URL;
+                downloadLoop(direct, part, expectedSize);
+            }
 
             // 5. Verify size BEFORE extract.
             if (expectedSize > 0 && part.length() != expectedSize)
