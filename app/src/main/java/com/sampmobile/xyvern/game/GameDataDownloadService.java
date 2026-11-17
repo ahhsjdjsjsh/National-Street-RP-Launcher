@@ -439,14 +439,38 @@ public class GameDataDownloadService extends Service {
     }
 
     private HttpURLConnection connect(String url, long rangeStart) throws Exception {
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setConnectTimeout(20000);
-        c.setReadTimeout(60000);
-        c.setRequestProperty("User-Agent", "M-SAMP-Launcher");
-        c.setRequestProperty("Accept", "application/octet-stream");
-        c.setInstanceFollowRedirects(true);
-        if (rangeStart > 0) c.setRequestProperty("Range", "bytes=" + rangeStart + "-");
-        return c;
+        // Follow redirects ourselves. Android's automatic redirect handling can
+        // drop request headers (especially Range/Accept) on some CDN redirects.
+        // GitHub's release-asset API requires Accept: application/octet-stream
+        // and responds with a redirect to the actual binary asset.
+        URL current = new URL(url);
+        for (int hop = 0; hop < 8; hop++) {
+            HttpURLConnection c = (HttpURLConnection) current.openConnection();
+            c.setConnectTimeout(20000);
+            c.setReadTimeout(60000);
+            c.setRequestMethod("GET");
+            c.setRequestProperty("User-Agent", "M-SAMP-Launcher");
+            c.setRequestProperty("Accept", "application/octet-stream");
+            c.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
+            c.setInstanceFollowRedirects(false);
+            if (rangeStart > 0) c.setRequestProperty("Range", "bytes=" + rangeStart + "-");
+
+            int code = c.getResponseCode();
+            if (code == HttpURLConnection.HTTP_MOVED_PERM
+                    || code == HttpURLConnection.HTTP_MOVED_TEMP
+                    || code == HttpURLConnection.HTTP_SEE_OTHER
+                    || code == 307 || code == 308) {
+                String location = c.getHeaderField("Location");
+                c.disconnect();
+                if (location == null || location.trim().isEmpty()) {
+                    throw new java.io.IOException("Download redirect did not include a destination URL.");
+                }
+                current = new URL(current, location);
+                continue;
+            }
+            return c;
+        }
+        throw new java.io.IOException("Too many redirects while opening the game-data download.");
     }
 
     /** Resolve legacy configuration URLs to a reliable direct package URL. */
