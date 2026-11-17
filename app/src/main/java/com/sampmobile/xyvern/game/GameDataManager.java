@@ -51,7 +51,7 @@ import java.util.zip.ZipFile;
  */
 public final class GameDataManager {
     private static final String APP_CONFIG = "https://raw.githubusercontent.com/Kallzzxa/hehehaha/refs/heads/main/app.json";
-    private static final String FALLBACK_DATA_PAGE = "https://github.com/rezzylrn/samp-mobile-optimized/releases/download/data-v1/files.zip";
+    private static final String FALLBACK_DATA_PAGE = "https://api.github.com/repos/rezzylrn/samp-mobile-optimized/releases/assets/632704137";
     private static final String FALLBACK_DATA_VERSION = "1";
 
     private static final String PREFS = "samp_game_data";
@@ -88,7 +88,7 @@ public final class GameDataManager {
                     return;
                 }
                 DataInfo info = new DataInfo();
-                info.url = config.optString("data_url", FALLBACK_DATA_PAGE);
+                // Use the stable GitHub asset API directly. The configured MediaFire page\n                // has been returning empty download responses in the launcher.\n                info.url = FALLBACK_DATA_PAGE;
                 // Keep the configured URL. MediaFire page URLs are resolved
                 // to their one-time direct download URL by GameDataDownloadService.
                 if (info.url == null || info.url.trim().isEmpty()) {
