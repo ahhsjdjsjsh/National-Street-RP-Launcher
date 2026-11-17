@@ -260,9 +260,15 @@ public final class GameDataManager {
     /** Show the progress dialog and observe service state; dismiss on DONE. */
     private static void registerProgressUi(Activity a) {
         ProgressUi ui = showProgress(a, null);
+        final java.util.concurrent.atomic.AtomicBoolean terminalHandled =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
         GameDataDownloadService.Listener l = s -> {
             if (a.isFinishing() || a.isDestroyed()) { unregisterProgressUi(); return; }
             MAIN.post(() -> {
+                if (s.phase == GameDataDownloadService.PHASE_DONE
+                        || s.phase == GameDataDownloadService.PHASE_FAILED) {
+                    if (!terminalHandled.compareAndSet(false, true)) return;
+                }
                 try {
                     if (!ui.dialog.isShowing()) return;
                     if (s.detail != null) {
@@ -274,6 +280,9 @@ public final class GameDataManager {
                 } catch (Exception ignored) {}
                 if (s.phase == GameDataDownloadService.PHASE_DONE) {
                     unregisterProgressUi();
+                    // Close the actual progress dialog; dismissLoading() only
+                    // handles the separate configuration/loading dialog.
+                    try { if (ui.dialog.isShowing()) ui.dialog.dismiss(); } catch (Exception ignored) {}
                     dismissLoading();
                     setImmersive(a, false);
                     Toast.makeText(a, "Game data is ready to play", Toast.LENGTH_SHORT).show();
@@ -281,6 +290,8 @@ public final class GameDataManager {
                     if (cb != null && !a.isFinishing()) cb.onReady();
                 } else if (s.phase == GameDataDownloadService.PHASE_FAILED) {
                     unregisterProgressUi();
+                    try { if (ui.dialog.isShowing()) ui.dialog.dismiss(); } catch (Exception ignored) {}
+                    setImmersive(a, false);
                     if (!a.isFinishing()) {
                         new AlertDialog.Builder(a).setTitle("Download failed")
                                 .setMessage(s.error == null ? "Please try again." : s.error)
@@ -295,6 +306,9 @@ public final class GameDataManager {
         };
         GameDataDownloadService.addListener(l);
         progressListener = l;
+        // Replay the latest state in case the service completed before this
+        // Activity registered its listener (for example after backgrounding).
+        l.onState(GameDataDownloadService.getState());
     }
 
     private static void unregisterProgressUi() {
