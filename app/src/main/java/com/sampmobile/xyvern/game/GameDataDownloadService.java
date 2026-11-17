@@ -249,24 +249,27 @@ public class GameDataDownloadService extends Service {
             try {
                 downloadLoop(direct, part, expectedSize);
             } catch (Exception primaryError) {
-                String reason = String.valueOf(primaryError.getMessage());
-                boolean emptyOrHtml = reason.contains("EMPTY_DOWNLOAD_RESPONSE")
-                        || reason.contains("HTML_DOWNLOAD_RESPONSE");
-                // The configured MediaFire page may resolve to a dead CDN link.
-                // For game data only, try the known release mirror once. Keep the
-                // same strict byte-size and ZIP/sentinel validation afterwards.
-                if (!isGameData || !emptyOrHtml
-                        || FALLBACK_DATA_URL.equals(direct)) {
+                // If the configured MediaFire/CDN URL fails for ANY reason,
+                // try the known GitHub release mirror once. A failed primary
+                // attempt may have left a partial file, so discard it before
+                // starting the mirror from byte zero.
+                if (!isGameData || FALLBACK_DATA_URL.equals(direct) || mCancelled) {
                     throw primaryError;
                 }
                 clearResolvedDownloadUrls();
                 if (part.exists() && !part.delete()) {
-                    throw new Exception("Could not clear the empty download file before trying the backup link.");
+                    throw new Exception("Primary download failed and its partial file could not be cleared: "
+                            + primaryError.getMessage());
                 }
                 setState(PHASE_CONNECT, 0, 0, expectedSize,
                         "Main download link failed — trying backup server...", null);
-                direct = FALLBACK_DATA_URL;
-                downloadLoop(direct, part, expectedSize);
+                try {
+                    direct = FALLBACK_DATA_URL;
+                    downloadLoop(direct, part, expectedSize);
+                } catch (Exception backupError) {
+                    throw new Exception("Main download failed (" + primaryError.getMessage()
+                            + "). Backup download also failed (" + backupError.getMessage() + ").");
+                }
             }
 
             // 5. Verify size BEFORE extract.
