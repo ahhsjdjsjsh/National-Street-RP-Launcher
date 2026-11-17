@@ -128,13 +128,34 @@ public final class GameDataManager {
         try {
             File root = a.getExternalFilesDir(null);
             if (root == null) return false;
+            // Some packages contain all playable GTA files but the completion
+            // marker/sentinel can be absent or placed differently. The launcher
+            // already validates these same core files before Connect, so accept
+            // a complete game-data root here instead of showing the downloader
+            // again from inside SAMP.
+            String[] essential = {
+                    "texdb/gta3.img",
+                    "data/gta.dat",
+                    "data/surface.dat",
+                    "data/fonts.dat",
+                    "data/handling.cfg"
+            };
+            boolean coreFilesPresent = true;
+            for (String relative : essential) {
+                File required = new File(root, relative);
+                if (!required.isFile() || required.length() == 0) {
+                    coreFilesPresent = false;
+                    break;
+                }
+            }
+            if (coreFilesPresent) return true;
+
             File marker = new File(root, MARKER);
             if (!marker.isFile()) return false;
             if (info.sentinel != null && !info.sentinel.isEmpty()) {
                 File s = new File(root, info.sentinel);
-                if (!s.exists()) return false;
+                if (!s.isFile() || s.length() == 0) return false;
             }
-            // game root must not be empty
             String[] list = root.list();
             return list != null && list.length > 0;
         } catch (Exception e) {
