@@ -100,9 +100,12 @@ public final class GameDataManager {
                 if (info.size < 0) info.size = 0;
                 info.sentinel = config.optString("data_sentinel", "SAMP/SAMP.ide");
 
-                String installed = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
-                        .getString(KEY_DATA_VERSION, "");
-                if (info.version.equals(installed) && isInstalled(activity, info)) {
+                // If the completion marker and required game file exist, the
+                // fixed game-data package is already installed. Sync the version
+                // preference instead of downloading the same large ZIP again.
+                if (isInstalled(activity, info)) {
+                    activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                            .edit().putString(KEY_DATA_VERSION, info.version).apply();
                     MAIN.post(() -> { dismissLoading(); if (!activity.isFinishing()) callback.onReady(); });
                     return;
                 }
