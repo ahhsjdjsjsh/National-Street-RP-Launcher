@@ -411,7 +411,12 @@ public class GameDataDownloadService extends Service {
             // Never report 100% for an empty body. This can happen when a
             // one-time MediaFire URL has expired but still responds HTTP 200.
             if (!part.exists() || part.length() == 0L) {
-                throw new java.io.IOException("EMPTY_DOWNLOAD_RESPONSE: The server finished without sending any file data. Tap TRY AGAIN to get a fresh download link.");
+                String diagnostic = "HTTP " + code
+                        + ", type=" + String.valueOf(contentType)
+                        + ", contentLength=" + responseLength
+                        + ", finalUrl=" + String.valueOf(conn.getURL());
+                throw new java.io.IOException("EMPTY_DOWNLOAD_RESPONSE: Server returned no file bytes (" 
+                        + diagnostic + ").");
             }
             setState(PHASE_DOWNLOAD, 100, downloaded, downloaded, "Download complete", null);
         } finally {
